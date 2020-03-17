@@ -145,7 +145,7 @@ def main():
         if player.respawning > 0:
              player.respawning -= FPS
 
-        sense(player, asteroids)
+        sense(player, asteroids, win)
         show_state = font.render('State: '+' '.join(player.state), True, WHITE, BLACK)
         win.blit(show_state, statedisplay)
 
@@ -295,16 +295,17 @@ def lines_intersect(l1, l2):
 
     return ccw(l1[p1], l2[p1], l2[p2]) != ccw(l1[p2], l2[p1], l2[p2]) and ccw(l1[p1], l1[p2], l2[p1]) != ccw(l1[p1], l1[p2], l2[p2])
 
-def sense(player, asteroids):
+def sense(player, asteroids, win):
     angle = 90
     x = 0
     y = 1
-    ship = [player.x, player.y]
+    ship = [player.x+PLAYERSIZE/2, player.y+PLAYERSIZE/2]
     result = []
     for sensor in range(SENSORCOUNT):
         edge = [ship[x] + math.cos(math.radians(angle))*SENSORRANGE,
                 ship[y] - math.sin(math.radians(angle))*SENSORRANGE]
         ray = [ship, edge]
+        pygame.draw.line(win, (255, 255, 255), ship, edge, 3)
         result.append('None')
         for asteroid in asteroids:
             diameter = asteroid.scale*ASTEROIDSCALE
