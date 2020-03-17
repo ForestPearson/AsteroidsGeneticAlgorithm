@@ -8,8 +8,9 @@ WINDOW_HEIGHT = 920
 BLACK = (0, 0, 0, 0)
 WHITE = (255, 255, 255)
 MAXSPEED = 10
-THRUST = 0.2
-DECAY = 0.1
+THRUST = 2.5
+DECAY = 0.05
+VECTORCOUNT = 30
 BREAKPOINTS = [0, 100, 50, 20]
 DEATHPOINTS = -1000
 RESPAWNTIME = 6000
@@ -23,7 +24,7 @@ class Player:
     x = 100
     y = 100
     rotation = 0
-    speed = 1
+    speed = 0
     direction = 0
     lives = 3
     IMAGE = "player.png"
@@ -36,7 +37,7 @@ class Player:
         self.x = x
         self.y = y
         self.rotation = rotation
-        speed = 1
+        speed = 0
         direction = 0
 
 class Projectile:
@@ -94,7 +95,10 @@ def main():
     show_state = font.render('State: '+' '.join(player.state), True, WHITE, BLACK)
     statedisplay = show_state.get_rect()
     statedisplay.center = (535, 150)
+
     thrustvectors = []
+    for each in range(VECTORCOUNT):
+        thrustvectors.append([0, 0])
 
     projectiles = []
     firing = False
@@ -116,6 +120,7 @@ def main():
             player.rotation -= 5
         if keys[pygame.K_UP]:
             if player.speed <= MAXSPEED: player.speed += THRUST
+            del thrustvectors[0]
             thrustvectors.append([player.speed, player.rotation])
         if keys[pygame.K_SPACE]:
             if not firing: projectiles.append(fireProjectile(player, ship))
@@ -151,7 +156,7 @@ def main():
 
         drawAsteroids(asteroids, win)
         drawProjectiles(projectiles, win)
-        updateDirection(player, thrustvectors)
+        if len(thrustvectors) > 0: updateDirection(player, thrustvectors)
         updatePosition(player)
         drawPlayer(player, ship, win)
         decayThrust(thrustvectors)
@@ -183,22 +188,34 @@ def drawProjectiles(projectiles, win):
 
 #calculate new ship direction
 def updateDirection(player, thrustvectors):
-    thrustlimit = 0
-    thrusttotal = 0
-    thrustdirection = 0
-    directions = []
-    directiontotal = 0
-    for each in thrustvectors:
-        thrusttotal += each[0]
+    #thrustlimit = 0
+    #thrusttotal = 0
+    #thrustdirection = 0
+    #directions = []
+    #directiontotal = 0
+    #for each in thrustvectors:
+    #    thrusttotal += each[0]
+    #for each in range(len(thrustvectors)):
+    #    directions.append(thrustvectors[each][1] * thrustvectors[each][0] / thrusttotal)
+    #    if thrustvectors[each][0] > thrustlimit: thrustlimit = thrustvectors[each][0]
+    #for each in directions:
+    #    thrustdirection += each
+    #if thrusttotal > 0:
+    #    player.direction = thrustdirection
+    #else: player.direction = player.rotation
+    #player.speed = thrustlimit
+
+    xcomps = []
+    ycomps = []
     for each in range(len(thrustvectors)):
-        directions.append(thrustvectors[each][1] * thrustvectors[each][0] / thrusttotal)
-        if thrustvectors[each][0] > thrustlimit: thrustlimit = thrustvectors[each][0]
-    for each in directions:
-        thrustdirection += each
-    if thrusttotal > 0:
-        player.direction = thrustdirection
-    else: player.direction = player.rotation
-    player.speed = thrustlimit
+        xcomps.append(math.cos(math.radians(thrustvectors[each][1]))*thrustvectors[each][0])
+        ycomps.append(math.sin(math.radians(thrustvectors[each][1]))*thrustvectors[each][0])
+    xavg = sum(xcomps)/len(thrustvectors)
+    yavg = sum(ycomps)/len(thrustvectors)
+
+    player.speed = math.sqrt(xavg**2 + yavg**2)
+    player.direction = math.degrees(math.atan2(yavg/MAXSPEED,xavg/MAXSPEED))
+
 
 #calculate new ship position.
 def updatePosition(player):
@@ -222,9 +239,10 @@ def drawPlayer(player, ship, win):
 #decay speed and prune vectors
 def decayThrust(thrustvectors):
     for each in thrustvectors:
-        each[0] -= DECAY
-    for each in thrustvectors:
-        if each[0] < 0.5: thrustvectors.remove(each)
+        if each[0] >= DECAY: each[0] -= DECAY
+    #for each in thrustvectors:
+    #    if each[0] <= 0.5: thrustvectors.remove(each)
+
 
 def generateAsteroids(asteroids, LEVEL):
     for each in range(LEVEL):
