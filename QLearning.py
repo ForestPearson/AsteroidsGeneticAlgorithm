@@ -22,8 +22,8 @@ def choose_action(state):
     else: return greedy_choice(state)
 
 def greedy_choice(state):
-    print(state)
-    print(Q.index(state))
+    #print(state)
+    #print(Q.index(state))
     best = max(Q_Matrix[Q.index(state)])
     bests = [i for i, x in enumerate(Q_Matrix[Q.index(state)]) if x == best]
     return random.choice(bests)

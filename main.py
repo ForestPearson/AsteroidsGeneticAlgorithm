@@ -19,7 +19,8 @@ PLAYERSIZE = 20
 FPS = 60
 SENSORCOUNT = 8
 SENSORRANGE = WINDOW_HEIGHT/2
-FRAMES_PER_ACTION = 30
+FRAMES_PER_ACTION = 6
+QTRAINING = False
 
 class Player:
     x = 100
@@ -110,7 +111,11 @@ def main():
 
     timer =  pygame.time.Clock()
     actiontimer = 0
-    currentaction = 'None'
+    action = 0
+    currentaction = 0
+    oldstateval = 0
+    oldscore = 0
+    prevQscore = 0
 
     run = True
     while run:
@@ -118,10 +123,20 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
 
-        actiontimer += 1
-        if actiontimer == FRAMES_PER_ACTION:
-            actiontimer = 0
-            currentaction = Q.actions[Q.choose_action(player.state)]
+        if QTRAINING:
+            actiontimer += 1
+            if actiontimer == FRAMES_PER_ACTION:
+                actiontimer = 0
+                reward = SCORE - oldscore
+                oldscore = SCORE
+                nextbest = Q.Q_Matrix[Q.Q.index(player.state)][Q.greedy_choice(player.state)]
+                Q.Q_Matrix[oldstateval][action] = prevQscore + Q.stepsize*(reward + Q.discount*nextbest - prevQscore)
+
+                oldstateval = Q.Q.index(player.state)
+                action = Q.choose_action(player.state)
+                prevQscore = Q.Q_Matrix[oldstateval][action]
+
+                currentaction = Q.actions[action]
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] or currentaction == 'Left':
