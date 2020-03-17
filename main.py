@@ -2,6 +2,7 @@ import pygame
 import math
 import random
 import QLearning as Q
+import os.path
 
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 920
@@ -20,7 +21,8 @@ FPS = 60
 SENSORCOUNT = 8
 SENSORRANGE = WINDOW_HEIGHT/2
 FRAMES_PER_ACTION = 6
-QTRAINING = False
+QTRAINING = True
+SAVEQMATRIX = True
 
 class Player:
     x = 100
@@ -191,6 +193,8 @@ def main():
 
     pygame.quit()
 
+    if SAVEQMATRIX: saveQmatrix(Q.Q_Matrix)
+
 def fireProjectile(player, ship):
     x = player.x + ship.get_rect().centerx
     y = player. y + ship.get_rect().centery
@@ -342,6 +346,20 @@ def sense(player, asteroids, win):
         angle += 360/SENSORCOUNT
     player.state = tuple(result)
 
+def saveQmatrix(Q_Matrix):
+    name = "empty"
+    t = 0
+    while name == "empty":
+        if not os.path.exists(os.getcwd()+"test"+str(t)+".csv"): name = "test"+str(t)+".csv"
+    output = open(name, "w")
+    print(os.getcwd())
+
+    for state in range(len(Q_Matrix)):
+        output.write(str(state)+',')
+        for action in range(len(Q_Matrix[state])):
+            output.write(str(Q_Matrix[state][action])+',')
+        output.write('\n')
+    output.close()
 
 if __name__ == '__main__':
     main()
