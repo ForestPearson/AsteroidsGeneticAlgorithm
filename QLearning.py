@@ -29,13 +29,13 @@ def greedy_choice(state):
 def act(action, player):
     initscore = player.score
     #execute given action
-    if action == 'Left':
-    if action == 'Right':
-    if action == 'Thrust':
-    if action == 'Shoot':
+    #if action == 'Left':
+    #if action == 'Right':
+    #if action == 'Thrust':
+    #if action == 'Shoot':
     #will need to wait for projectileLifespan to return reward
     #observe new score
-    return finalscore - initscore
+    return initscore
 
 def train(player, Q_Matrix):
     initstate = Q.index(player.state)
