@@ -21,9 +21,10 @@ FPS = 60                                                                        
 SENSORCOUNT = 8                                                                 #Ship sensors, limited by Q.sensors[].
 SENSORRANGE = WINDOW_HEIGHT/2                                                   #
 FRAMES_PER_ACTION = 6                                                           #
-QTRAINING = False                                                               #Toggle for Q-Learning.
-SAVEQMATRIX = True                                                              #Toggle for output of Q-Matrix.
-DRAW_SENSORS = False                                                            #
+QTRAINING = True                                                               #Toggle for Q-Learning.
+SAVEQMATRIX = False                                                              #Toggle for output of Q-Matrix.
+DRAW_SENSORS = True                                                             #
+DISPLAY_GAME = False
 
 class Player:
     x = 100
@@ -191,15 +192,20 @@ def main():
         show_state = font.render('State: '+' '.join(player.state), True, WHITE, BLACK)
         win.blit(show_state, statedisplay)
 
-        #Update player speed and position.
+        #Update player thrust vectors
         if len(thrustvectors) > 0: updateDirection(player, thrustvectors)
-        updatePosition(player)
         decayThrust(thrustvectors)
 
+        #Update player, asteroid and projectile positions.
+        updatePosition(player)
+        updateAsteroids(asteroids)
+        updateProjectiles(projectiles)
+
         #Draw the game.
-        drawPlayer(player, ship, win)
-        drawAsteroids(asteroids, win)
-        drawProjectiles(projectiles, win)
+        if DISPLAY_GAME:
+            drawPlayer(player, ship, win)
+            drawAsteroids(asteroids, win)
+            drawProjectiles(projectiles, win)
 
         pygame.display.update()
         timer.tick(FPS)
@@ -214,9 +220,8 @@ def fireProjectile(player, ship):
     fire = Projectile(x, y, player.rotation)
     return fire
 
-#Draw projectiles to screen.
-#TODO: seperate out position, wrapping and lifespan into an "updateProjectiles()" method.
-def drawProjectiles(projectiles, win):
+#Calculate position and lifespan of projectiles based on velocity, wrapping as necessary.
+def updateProjectiles(projectiles):
     for each in projectiles:
         each.x += math.cos(math.radians(each.rotation))*each.velocity
         each.y -= math.sin(math.radians(each.rotation))*each.velocity
@@ -224,10 +229,14 @@ def drawProjectiles(projectiles, win):
         if each.y < 0: each.y += WINDOW_HEIGHT
         if each.x > WINDOW_WIDTH: each.x -= WINDOW_WIDTH
         if each.x < 0: each.x += WINDOW_WIDTH
-        pygame.draw.rect(win, (255, 255, 255), (each.x-1, each.y-1, 3, 3))
         each.lifespan -= each.velocity
     for each in projectiles:
         if each.lifespan <= 0: projectiles.remove(each)
+
+#Draw projectiles to screen.
+def drawProjectiles(projectiles, win):
+    for each in projectiles:
+        pygame.draw.rect(win, (255, 255, 255), (each.x-1, each.y-1, 3, 3))
 
 #Calculate player velocity using thrust vectors.
 def updateDirection(player, thrustvectors):
@@ -241,22 +250,21 @@ def updateDirection(player, thrustvectors):
     player.speed = math.sqrt(xavg**2 + yavg**2)
     player.direction = math.degrees(math.atan2(yavg/MAXSPEED,xavg/MAXSPEED))
 
-#Calculate new ship position using velocity.
+#Calculate new ship position using velocity, wrapping as necessary.
 def updatePosition(player):
     angle = math.radians(player.direction)
     xcomp = math.cos(angle)
     ycomp = math.sin(angle)
     player.x += xcomp*player.speed
     player.y -= ycomp*player.speed
-
-#Draw player to screen.
-#TODO: Move rotation and wrapping to update function above.
-def drawPlayer(player, ship, win):
-    rotatedShip = pygame.transform.rotate(ship, player.rotation)
     if player.y > WINDOW_HEIGHT: player.y -= WINDOW_HEIGHT
     if player.y < 0: player.y += WINDOW_HEIGHT
     if player.x > WINDOW_WIDTH: player.x -= WINDOW_WIDTH
     if player.x < 0: player.x += WINDOW_WIDTH
+
+#Draw player to screen.
+def drawPlayer(player, ship, win):
+    rotatedShip = pygame.transform.rotate(ship, player.rotation)
     newship = rotatedShip.get_rect(center = ship.get_rect(topleft = (player.x, player.y)).center)
     if player.respawning % 500 < 250:
         win.blit(rotatedShip, newship.topleft)
@@ -276,9 +284,8 @@ def generateAsteroids(asteroids, LEVEL):
         asteroids[each].sprite = pygame.transform.scale(asteroids[each].sprite, (3*ASTEROIDSCALE, 3*ASTEROIDSCALE))
     return asteroids
 
-#Draw asteroids to screen.
-#TODO: Move position and wrapping updates to seperate "updateAsteroids()" method
-def drawAsteroids(asteroids, win):
+#Calculate new position of each asteroid, wrapping as necessary.
+def updateAsteroids(asteroids):
     for each in asteroids:
         each.x += math.cos(math.radians(each.rotation))*each.velocity
         each.y -= math.sin(math.radians(each.rotation))*each.velocity
@@ -286,6 +293,10 @@ def drawAsteroids(asteroids, win):
         if each.y < 0: each.y += WINDOW_HEIGHT
         if each.x > WINDOW_WIDTH: each.x -= WINDOW_WIDTH
         if each.x < 0: each.x += WINDOW_WIDTH
+
+#Draw asteroids to screen.
+def drawAsteroids(asteroids, win):
+    for each in asteroids:
         win.blit(each.sprite,( each.x, each.y))
 
 #Detect whether the player has hit any asteroids.
