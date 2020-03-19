@@ -52,32 +52,32 @@ class Player:
 class Projectile:
     x = 100
     y = 100
-    rotation = 0
-    velocity = 15
+    direction = 0
+    speed = 15
     lifespan = WINDOW_WIDTH/2
 
-    def __init__(self, x, y, rotation):
+    def __init__(self, x, y, direction):
         self.x = x
         self.y = y
-        self.rotation = rotation
-        velocity = 15
+        self.direction = direction
+        speed = 15
         lifespan = WINDOW_WIDTH/2
 
 class Asteroid:
     x = 50
     y = 50
-    rotation = 90.0
-    velocity = 1
+    direction = 90.0
+    speed = 1
     IMAGE = "asteroid.png"
     scale = 3 #lower by 1 each time hit and split into more asteroids, if at 1, dies when hit
     sprite = pygame.image.load(IMAGE)
     dead = False
 
-    def __init__(self, x, y, rotation):
+    def __init__(self, x, y, direction):
         self.x = x
         self.y = y
-        self.rotation = rotation
-        velocity = 1
+        self.direction = direction
+        speed = 1
 
 def main():
     #Initialize pygame and window surface.
@@ -212,19 +212,17 @@ def wrap(object):
     if object.x < 0: object.x += WINDOW_WIDTH
     return object
 
+def updatePosition(object):
+    object.x += math.cos(math.radians(object.direction))*object.speed
+    object.y -= math.sin(math.radians(object.direction))*object.speed
+    wrap(object)
+
 #Calculate position and lifespan of projectiles based on velocity, wrapping as necessary.
 def updateProjectiles(projectiles):
-    for each in projectiles:
-        each.x += math.cos(math.radians(each.rotation))*each.velocity
-        each.y -= math.sin(math.radians(each.rotation))*each.velocity
-        #if each.y > WINDOW_HEIGHT: each.y -= WINDOW_HEIGHT
-        #if each.y < 0: each.y += WINDOW_HEIGHT
-        #if each.x > WINDOW_WIDTH: each.x -= WINDOW_WIDTH
-        #if each.x < 0: each.x += WINDOW_WIDTH
-        each = wrap(each)
-        each.lifespan -= each.velocity
-    for each in projectiles:
-        if each.lifespan <= 0: projectiles.remove(each)
+    for projectile in projectiles:
+        updatePosition(projectile)
+        projectile.lifespan -= projectile.speed
+        if projectile.lifespan <= 0: projectiles.remove(projectile)
 
 #Draw projectiles to screen.
 def drawProjectiles(projectiles, win):
@@ -247,16 +245,7 @@ def updateDirection(player, thrustvectors):
 def updatePlayer(player):
     updateDirection(player, player.thrustvectors)
     decayThrust(player.thrustvectors)
-    angle = math.radians(player.direction)
-    xcomp = math.cos(angle)
-    ycomp = math.sin(angle)
-    player.x += xcomp*player.speed
-    player.y -= ycomp*player.speed
-    #if player.y > WINDOW_HEIGHT: player.y -= WINDOW_HEIGHT
-    #if player.y < 0: player.y += WINDOW_HEIGHT
-    #if player.x > WINDOW_WIDTH: player.x -= WINDOW_WIDTH
-    #if player.x < 0: player.x += WINDOW_WIDTH
-    player = wrap(player)
+    updatePosition(player)
     if player.hit:
         player.hit = False
         player.x = WINDOW_WIDTH/2
@@ -289,14 +278,8 @@ def generateAsteroids(asteroids, LEVEL):
 
 #Calculate new position of each asteroid, wrapping as necessary.
 def updateAsteroids(asteroids):
-    for each in asteroids:
-        each.x += math.cos(math.radians(each.rotation))*each.velocity
-        each.y -= math.sin(math.radians(each.rotation))*each.velocity
-        each = wrap(each)
-        #if each.y > WINDOW_HEIGHT: each.y -= WINDOW_HEIGHT
-        #if each.y < 0: each.y += WINDOW_HEIGHT
-        #if each.x > WINDOW_WIDTH: each.x -= WINDOW_WIDTH
-        #if each.x < 0: each.x += WINDOW_WIDTH
+    for asteroid in asteroids:
+        updatePosition(asteroid)
 
 #Draw asteroids to screen.
 def drawAsteroids(asteroids, win):
@@ -332,12 +315,9 @@ def splitAsteroids(asteroids):
             if each.scale > 1:
                 newAsteroid1 = Asteroid(each.x, each.y, random.random()*360)
                 newAsteroid2 = Asteroid(each.x, each.y, random.random()*360)
-                newAsteroid1.scale = each.scale - 1
-                newAsteroid2.scale = each.scale - 1
-                newAsteroid1.velocity = each.velocity + 1
-                newAsteroid2.velocity = each.velocity + 1
-                newAsteroid1.sprite = pygame.transform.scale(newAsteroid1.sprite, (newAsteroid1.scale*ASTEROIDSCALE, newAsteroid1.scale*ASTEROIDSCALE))
-                newAsteroid2.sprite = pygame.transform.scale(newAsteroid2.sprite, (newAsteroid2.scale*ASTEROIDSCALE, newAsteroid2.scale*ASTEROIDSCALE))
+                newAsteroid1.scale = newAsteroid2.scale = each.scale - 1
+                newAsteroid1.speed = newAsteroid2.speed = each.speed + 1
+                newAsteroid1.sprite = newAsteroid2.sprite = pygame.transform.scale(newAsteroid2.sprite, (newAsteroid2.scale*ASTEROIDSCALE, newAsteroid2.scale*ASTEROIDSCALE))
                 asteroids.append(newAsteroid1)
                 asteroids.append(newAsteroid2)
             asteroids.remove(each)
