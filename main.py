@@ -21,7 +21,7 @@ FPS = 60                                                                        
 SENSORCOUNT = 8                                                                 #Ship sensors, limited by Q.sensors[].
 SENSORRANGE = WINDOW_HEIGHT/2                                                   #
 FRAMES_PER_ACTION = 6                                                           #
-QTRAINING = False                                                                #Toggle for Q-Learning.
+QTRAINING = True                                                                #Toggle for Q-Learning.
 SAVEQMATRIX = False                                                             #Toggle for output of Q-Matrix.
 DRAW_SENSORS = False                                                             #
 DISPLAY_GAME = True
@@ -86,13 +86,14 @@ def main():
     pygame.display.set_caption("Asteroids Genetic Algorithm")
 
     #Initialize Q-Learning.
-    Q.Q_Matrix = Q.initialize()
-    actiontimer = 0
-    action = 0
-    currentaction = 0
-    oldstateval = 0
-    oldscore = 0
-    prevQscore = 0
+    if QTRAINING:
+        Q.Q_Matrix = Q.initialize()
+        actiontimer = 0
+        action = 0
+        currentaction = 0
+        oldstateval = 0
+        oldscore = 0
+        prevQscore = 0
 
     #Initialize scoreboard.
     SCORE = 0
@@ -148,18 +149,18 @@ def main():
 
         #Choose an action, based on current key press or Q-Learning decision.
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT] or currentaction == 'Left':
+        if (QTRAINING and currentaction == 'Left') or keys[pygame.K_LEFT]:
             player.rotation += 5
-        if keys[pygame.K_RIGHT] or currentaction == 'Right':
+        if (QTRAINING and currentaction == 'Right') or keys[pygame.K_RIGHT]:
             player.rotation -= 5
-        if keys[pygame.K_UP] or currentaction == 'Thrust':
+        if (QTRAINING and currentaction == 'Thrust') or keys[pygame.K_UP]:
             if player.speed <= MAXSPEED: player.speed += THRUST
             del player.thrustvectors[0]
             player.thrustvectors.append([player.speed, player.rotation])
-        if keys[pygame.K_SPACE] or currentaction == 'Shoot':
+        if (QTRAINING and currentaction == 'Shoot') or keys[pygame.K_SPACE]:
             if not firing: projectiles.append(fireProjectile(player, ship))
             firing = True
-        if not keys[pygame.K_SPACE]:
+        if not (QTRAINING and currentaction == 'Shoot') or keys[pygame.K_SPACE]:
             firing = False
 
         #Reset the screen before drawing.
