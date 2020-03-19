@@ -23,7 +23,7 @@ SENSORRANGE = WINDOW_HEIGHT/2                                                   
 FRAMES_PER_ACTION = 6                                                           #
 QTRAINING = False                                                                #Toggle for Q-Learning.
 SAVEQMATRIX = False                                                             #Toggle for output of Q-Matrix.
-DRAW_SENSORS = False                                                             #
+DRAW_SENSORS = True                                                             #
 DISPLAY_GAME = True
 
 class Player:
@@ -95,29 +95,31 @@ def main():
         oldscore = 0
         prevQscore = 0
 
-    #Initialize scoreboard.
-    SCORE = 0
-    font = pygame.font.Font('Vector_Battle.ttf', 24)
-    font.set_bold(True)
-    show_score = font.render('SCORE: 0', True, WHITE, BLACK)
-    scoreboard = show_score.get_rect()
-    scoreboard.center = (150, 50)
-
     #Initialize level one asteroids ().
     LEVEL = 1
     asteroids = []
     asteroids = generateAsteroids(asteroids, LEVEL)
 
+    #Initialize scoreboard.
+    SCORE = 0
+    if DISPLAY_GAME:
+        font = pygame.font.Font('Vector_Battle.ttf', 24)
+        font.set_bold(True)
+        show_score = font.render('SCORE: 0', True, WHITE, BLACK)
+        scoreboard = show_score.get_rect()
+        scoreboard.center = (150, 50)
+
     #Initialize player sprite.
     player = Player(WINDOW_WIDTH/2, WINDOW_HEIGHT/2, 0)
-    ship = pygame.image.load(player.IMAGE)
-    ship = pygame.transform.rotate(ship, -90)
-    ship = pygame.transform.scale(ship, (PLAYERSIZE, PLAYERSIZE))
+    if DISPLAY_GAME:
+        ship = pygame.image.load(player.IMAGE)
+        ship = pygame.transform.rotate(ship, -90)
+        ship = pygame.transform.scale(ship, (PLAYERSIZE, PLAYERSIZE))
 
     #Initialize state display.
-    show_state = font.render('State: '+' '.join(player.state), True, WHITE, BLACK)
-    statedisplay = show_state.get_rect()
-    statedisplay.center = (535, 150)
+        show_state = font.render('State: '+' '.join(player.state), True, WHITE, BLACK)
+        statedisplay = show_state.get_rect()
+        statedisplay.center = (535, 150)
 
     #Initialize projectiles.
     projectiles = []
@@ -158,42 +160,31 @@ def main():
             del player.thrustvectors[0]
             player.thrustvectors.append([player.speed, player.rotation])
         if (QTRAINING and currentaction == 'Shoot') or keys[pygame.K_SPACE]:
-            if not firing: projectiles.append(fireProjectile(player, ship))
+            if not firing: projectiles.append(fireProjectile(player))
             firing = True
         if QTRAINING:
             if currentaction != 'Shoot': firing = False
         else:
              if not keys[pygame.K_SPACE]: firing = False
 
-        #Reset the screen before drawing.
-        win.fill(BLACK)
-
-        #If level cleared, go to next level.
-        if len(asteroids) == 0:
-            LEVEL += 1
-            asteroids = generateAsteroids(asteroids, LEVEL)
-
+        #Update player, asteroids, projectiles, SCORE, LEVEL and state.
+        rays = sense(player, asteroids)
         projectiles = detectProjectileColision(asteroids, projectiles)
         SCORE += updateScore(player, asteroids)
         player.score = SCORE
-
-        #Detect and display current state.
-        sense(player, asteroids, win)
-        show_state = font.render('State: '+' '.join(player.state), True, WHITE, BLACK)
-        win.blit(show_state, statedisplay)
-
-        #Update player, asteroid and projectile positions.
         updatePlayer(player)
         LEVEL = updateAsteroids(asteroids, LEVEL)
         updateProjectiles(projectiles)
 
         #Draw the game.
         if DISPLAY_GAME:
+            win.fill(BLACK)
             drawPlayer(player, ship, win)
             drawAsteroids(asteroids, win)
             drawProjectiles(projectiles, win)
-
-        displayScore(SCORE, font, scoreboard, win)
+            displayState(player.state, font, statedisplay, win)
+            if DRAW_SENSORS: drawSensors(rays, win)
+            displayScore(SCORE, font, scoreboard, win)
 
         pygame.display.update()
         timer.tick(FPS)
@@ -201,14 +192,14 @@ def main():
     pygame.quit()
     if SAVEQMATRIX: saveQmatrix(Q.Q_Matrix)
 
-def simulate(player, asteroids, projectiles, LEVEL, SCORE, steps):
+def simulate(player, asteroids, projectiles, LEVEL, SCORE, steps, MODE):
     for step in range(steps):
-        step = 0
+        sense(player, asteroids)
 
 #Generate a projectile in the direction the player is facing.
-def fireProjectile(player, ship):
-    x = player.x + ship.get_rect().centerx
-    y = player. y + ship.get_rect().centery
+def fireProjectile(player):
+    x = player.x + PLAYERSIZE/2
+    y = player. y + PLAYERSIZE/2
     fire = Projectile(x, y, player.rotation)
     return fire
 
@@ -341,6 +332,10 @@ def displayScore(SCORE, font, scoreboard, win):
     show_score = font.render('SCORE: '+str(SCORE), True, WHITE, BLACK)
     win.blit(show_score, scoreboard)
 
+def displayState(state, font, statedisplay, win):
+    show_state = font.render('State: '+' '.join(state), True, WHITE, BLACK)
+    win.blit(show_state, statedisplay)
+
 #Determine whether two lines (lists of two points x and y) intersect.
 #Credit: https://stackoverflow.com/questions/3838329/how-can-i-check-if-two-segments-intersect
 def lines_intersect(l1, l2):
@@ -351,17 +346,18 @@ def lines_intersect(l1, l2):
     return ccw(l1[p1], l2[p1], l2[p2]) != ccw(l1[p2], l2[p1], l2[p2]) and ccw(l1[p1], l1[p2], l2[p1]) != ccw(l1[p1], l1[p2], l2[p2])
 
 #Update player state by checking whether rays from the player intersect any asteroids and if so, what size.
-def sense(player, asteroids, win):
+def sense(player, asteroids):
     angle = 90
     x = 0
     y = 1
     ship = [player.x+PLAYERSIZE/2, player.y+PLAYERSIZE/2]
     result = []
+    rays = []
     for sensor in range(SENSORCOUNT):
         edge = [ship[x] + math.cos(math.radians(angle))*SENSORRANGE,
                 ship[y] - math.sin(math.radians(angle))*SENSORRANGE]
         ray = [ship, edge]
-        if DRAW_SENSORS: pygame.draw.line(win, (255, 255, 255), ship, edge, 3)
+        rays.append(ray)
         result.append('None')
         for asteroid in asteroids:
             diameter = asteroid.scale*ASTEROIDSCALE
@@ -373,6 +369,11 @@ def sense(player, asteroids, win):
                 result[sensor] = (Q.results[asteroid.scale])
         angle += 360/SENSORCOUNT
     player.state = tuple(result)
+    return rays
+
+def drawSensors(rays, win):
+    for ray in rays:
+        pygame.draw.line(win, (255, 255, 255), ray[0], ray[1], 3)
 
 #Save Q-Matrix to a .csv file. First column: state #, columns 2-5: Q-Scores for actions in Q.actions[]
 #TODO: Fix file naming so that it doesn't keey outputting to test0
