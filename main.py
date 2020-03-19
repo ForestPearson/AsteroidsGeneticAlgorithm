@@ -21,10 +21,10 @@ FPS = 60                                                                        
 SENSORCOUNT = 8                                                                 #Ship sensors, limited by Q.sensors[].
 SENSORRANGE = WINDOW_HEIGHT/2                                                   #
 FRAMES_PER_ACTION = 6                                                           #
-QTRAINING = True                                                               #Toggle for Q-Learning.
-SAVEQMATRIX = False                                                              #Toggle for output of Q-Matrix.
-DRAW_SENSORS = True                                                             #
-DISPLAY_GAME = False
+QTRAINING = False                                                                #Toggle for Q-Learning.
+SAVEQMATRIX = False                                                             #Toggle for output of Q-Matrix.
+DRAW_SENSORS = False                                                             #
+DISPLAY_GAME = True
 
 class Player:
     x = 100
@@ -172,20 +172,9 @@ def main():
             LEVEL += 1
             asteroids = generateAsteroids(asteroids, LEVEL)
 
-        #Detect collisions and update score
-        SCORE += detectPlayerColision(asteroids, player)
         projectiles = detectProjectileColision(asteroids, projectiles)
-        SCORE += splitAsteroids(asteroids)
-        show_score = font.render('SCORE: '+str(SCORE), True, WHITE, BLACK)
-        win.blit(show_score, scoreboard)
+        SCORE += updateScore(player, asteroids)
         player.score = SCORE
-
-        #Respawn if hit.
-        if player.hit:
-            player.hit = False
-            player.respawning = RESPAWNTIME
-        if player.respawning > 0:
-             player.respawning -= FPS
 
         #Detect and display current state.
         sense(player, asteroids, win)
@@ -197,7 +186,7 @@ def main():
         decayThrust(thrustvectors)
 
         #Update player, asteroid and projectile positions.
-        updatePosition(player)
+        updatePlayer(player)
         updateAsteroids(asteroids)
         updateProjectiles(projectiles)
 
@@ -206,6 +195,8 @@ def main():
             drawPlayer(player, ship, win)
             drawAsteroids(asteroids, win)
             drawProjectiles(projectiles, win)
+
+        displayScore(SCORE, font, scoreboard, win)
 
         pygame.display.update()
         timer.tick(FPS)
@@ -251,7 +242,7 @@ def updateDirection(player, thrustvectors):
     player.direction = math.degrees(math.atan2(yavg/MAXSPEED,xavg/MAXSPEED))
 
 #Calculate new ship position using velocity, wrapping as necessary.
-def updatePosition(player):
+def updatePlayer(player):
     angle = math.radians(player.direction)
     xcomp = math.cos(angle)
     ycomp = math.sin(angle)
@@ -261,6 +252,13 @@ def updatePosition(player):
     if player.y < 0: player.y += WINDOW_HEIGHT
     if player.x > WINDOW_WIDTH: player.x -= WINDOW_WIDTH
     if player.x < 0: player.x += WINDOW_WIDTH
+    if player.hit:
+        player.hit = False
+        player.x = WINDOW_WIDTH/2
+        player.y = WINDOW_HEIGHT/2
+        player.respawning = RESPAWNTIME
+    if player.respawning > 0:
+        player.respawning -= FPS
 
 #Draw player to screen.
 def drawPlayer(player, ship, win):
@@ -306,8 +304,6 @@ def detectPlayerColision(asteroids, player):
             diameter = asteroid.scale*ASTEROIDSCALE
             if player.x >= asteroid.x and player.y >= asteroid.y and player.x <= asteroid.x + diameter and player.y <= asteroid.y + diameter:
                 player.hit = True
-                player.x = WINDOW_WIDTH/2
-                player.y = WINDOW_HEIGHT/2
                 return DEATHPOINTS
     return 0
 
@@ -340,6 +336,13 @@ def splitAsteroids(asteroids):
                 asteroids.append(newAsteroid2)
             asteroids.remove(each)
     return score
+
+def updateScore(player, asteroids):
+    return detectPlayerColision(asteroids, player) + splitAsteroids(asteroids)
+
+def displayScore(SCORE, font, scoreboard, win):
+    show_score = font.render('SCORE: '+str(SCORE), True, WHITE, BLACK)
+    win.blit(show_score, scoreboard)
 
 #Determine whether two lines (lists of two points x and y) intersect.
 #Credit: https://stackoverflow.com/questions/3838329/how-can-i-check-if-two-segments-intersect
