@@ -2,6 +2,7 @@ import pygame
 import math
 import random
 import QLearning as Q
+import GA
 import os.path
 
 WINDOW_WIDTH = 1280                                                             #
@@ -21,9 +22,9 @@ FPS = 60                                                                        
 SENSORCOUNT = 8                                                                 #Ship sensors, limited by Q.sensors[].
 SENSORRANGE = WINDOW_HEIGHT/2                                                   #
 FRAMES_PER_ACTION = 6                                                           #
-QTRAINING = False                                                                #Toggle for Q-Learning.
+MODE = 0                                                                        #0 = 'Default', 1 = 'QTRAINING', 2 = 'GATRAINING'
 SAVEQMATRIX = False                                                             #Toggle for output of Q-Matrix.
-DRAW_SENSORS = True                                                             #
+DRAW_SENSORS = False                                                             #
 DISPLAY_GAME = True
 
 class Player:
@@ -39,6 +40,7 @@ class Player:
     state = ('None', 'None', 'None', 'None', 'None', 'None', 'None', 'None')
     score = 0
     thrustvectors = []
+    firing = False
 
     def __init__(self, x, y, rotation):
         self.x = x
@@ -80,13 +82,18 @@ class Asteroid:
         speed = 1
 
 def main():
+    Default= 0
+    QLearning = 1
+    Genetic = 2
+
     #Initialize pygame and window surface.
     pygame.init()
     win = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     pygame.display.set_caption("Asteroids Genetic Algorithm")
 
     #Initialize Q-Learning.
-    if QTRAINING:
+    if MODE == QLearning:
+        QTRAINING = True
         Q.Q_Matrix = Q.initialize()
         actiontimer = 0
         action = 0
@@ -123,20 +130,27 @@ def main():
 
     #Initialize projectiles.
     projectiles = []
-    firing = False
 
     #Initialize timers.
     respawntime = 0
     timer =  pygame.time.Clock()
 
     run = True
+    if MODE == Genetic:
+        run = False
+        population = [GA.random_chromosome() for _ in range(GA.PopulationSize)]
+        i = 0
+        while i < GA.NumIterations:
+            population = GA.genetic_algorithm(i, GA.NumIterations, population, 10000000)
+            i += 1
+
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
 
         #If using Q-Learning, train the Q-Matrix when the action timer runs out.
-        if QTRAINING:
+        if MODE == QLearning:
             actiontimer += 1
             if actiontimer == FRAMES_PER_ACTION:
                 actiontimer = 0
@@ -151,21 +165,21 @@ def main():
 
         #Choose an action, based on current key press or Q-Learning decision.
         keys = pygame.key.get_pressed()
-        if (QTRAINING and currentaction == 'Left') or keys[pygame.K_LEFT]:
+        if (MODE == QLearning and currentaction == 'Left') or keys[pygame.K_LEFT]:
             player.rotation += 5
-        if (QTRAINING and currentaction == 'Right') or keys[pygame.K_RIGHT]:
+        if (MODE == QLearning and currentaction == 'Right') or keys[pygame.K_RIGHT]:
             player.rotation -= 5
-        if (QTRAINING and currentaction == 'Thrust') or keys[pygame.K_UP]:
+        if (MODE == QLearning and currentaction == 'Thrust') or keys[pygame.K_UP]:
             if player.speed <= MAXSPEED: player.speed += THRUST
             del player.thrustvectors[0]
             player.thrustvectors.append([player.speed, player.rotation])
-        if (QTRAINING and currentaction == 'Shoot') or keys[pygame.K_SPACE]:
-            if not firing: projectiles.append(fireProjectile(player))
-            firing = True
-        if QTRAINING:
-            if currentaction != 'Shoot': firing = False
+        if (MODE == QLearning and currentaction == 'Shoot') or keys[pygame.K_SPACE]:
+            if not player.firing: projectiles.append(fireProjectile(player))
+            player.firing = True
+        if MODE == QLearning:
+            if currentaction != 'Shoot': player.firing = False
         else:
-             if not keys[pygame.K_SPACE]: firing = False
+             if not keys[pygame.K_SPACE]: player.firing = False
 
         #Update player, asteroids, projectiles, SCORE, LEVEL and state.
         rays = sense(player, asteroids)
@@ -177,24 +191,34 @@ def main():
         updateProjectiles(projectiles)
 
         #Draw the game.
-        if DISPLAY_GAME:
-            win.fill(BLACK)
-            drawPlayer(player, ship, win)
-            drawAsteroids(asteroids, win)
-            drawProjectiles(projectiles, win)
-            displayState(player.state, font, statedisplay, win)
-            if DRAW_SENSORS: drawSensors(rays, win)
-            displayScore(SCORE, font, scoreboard, win)
+        if DISPLAY_GAME: drawGame(player, ship, asteroids, projectiles, scoreboard, SCORE, statedisplay, rays, font, win)
 
-        pygame.display.update()
         timer.tick(FPS)
 
     pygame.quit()
     if SAVEQMATRIX: saveQmatrix(Q.Q_Matrix)
 
-def simulate(player, asteroids, projectiles, LEVEL, SCORE, steps, MODE):
+def drawGame(player, ship, asteroids, projectiles, scoreboard, SCORE, statedisplay, rays, font, win):
+    win.fill(BLACK)
+    drawPlayer(player, ship, win)
+    drawAsteroids(asteroids, win)
+    drawProjectiles(projectiles, win)
+    displayState(player.state, font, statedisplay, win)
+    displayScore(SCORE, font, scoreboard, win)
+    if DRAW_SENSORS: drawSensors(rays, win)
+    pygame.display.update()
+
+def simulate(player, asteroids, projectiles, LEVEL, SCORE, steps, CHROMOSOME):
+    action = 0
     for step in range(steps):
         sense(player, asteroids)
+        projectiles = detectProjectileColision(asteroids, projectiles)
+        SCORE += updateScore(player, asteroids)
+        player.score = SCORE
+        updatePlayer(player)
+        LEVEL = updateAsteroids(asteroids, LEVEL)
+        updateProjectiles(projectiles)
+        action = GA.updateAction(player, CHROMOSOME)
 
 #Generate a projectile in the direction the player is facing.
 def fireProjectile(player):
