@@ -205,15 +205,23 @@ def fireProjectile(player, ship):
     fire = Projectile(x, y, player.rotation)
     return fire
 
+def wrap(object):
+    if object.y > WINDOW_HEIGHT: object.y -= WINDOW_HEIGHT
+    if object.y < 0: object.y += WINDOW_HEIGHT
+    if object.x > WINDOW_WIDTH: object.x -= WINDOW_WIDTH
+    if object.x < 0: object.x += WINDOW_WIDTH
+    return object
+
 #Calculate position and lifespan of projectiles based on velocity, wrapping as necessary.
 def updateProjectiles(projectiles):
     for each in projectiles:
         each.x += math.cos(math.radians(each.rotation))*each.velocity
         each.y -= math.sin(math.radians(each.rotation))*each.velocity
-        if each.y > WINDOW_HEIGHT: each.y -= WINDOW_HEIGHT
-        if each.y < 0: each.y += WINDOW_HEIGHT
-        if each.x > WINDOW_WIDTH: each.x -= WINDOW_WIDTH
-        if each.x < 0: each.x += WINDOW_WIDTH
+        #if each.y > WINDOW_HEIGHT: each.y -= WINDOW_HEIGHT
+        #if each.y < 0: each.y += WINDOW_HEIGHT
+        #if each.x > WINDOW_WIDTH: each.x -= WINDOW_WIDTH
+        #if each.x < 0: each.x += WINDOW_WIDTH
+        each = wrap(each)
         each.lifespan -= each.velocity
     for each in projectiles:
         if each.lifespan <= 0: projectiles.remove(each)
@@ -244,10 +252,11 @@ def updatePlayer(player):
     ycomp = math.sin(angle)
     player.x += xcomp*player.speed
     player.y -= ycomp*player.speed
-    if player.y > WINDOW_HEIGHT: player.y -= WINDOW_HEIGHT
-    if player.y < 0: player.y += WINDOW_HEIGHT
-    if player.x > WINDOW_WIDTH: player.x -= WINDOW_WIDTH
-    if player.x < 0: player.x += WINDOW_WIDTH
+    #if player.y > WINDOW_HEIGHT: player.y -= WINDOW_HEIGHT
+    #if player.y < 0: player.y += WINDOW_HEIGHT
+    #if player.x > WINDOW_WIDTH: player.x -= WINDOW_WIDTH
+    #if player.x < 0: player.x += WINDOW_WIDTH
+    player = wrap(player)
     if player.hit:
         player.hit = False
         player.x = WINDOW_WIDTH/2
@@ -283,10 +292,11 @@ def updateAsteroids(asteroids):
     for each in asteroids:
         each.x += math.cos(math.radians(each.rotation))*each.velocity
         each.y -= math.sin(math.radians(each.rotation))*each.velocity
-        if each.y > WINDOW_HEIGHT: each.y -= WINDOW_HEIGHT
-        if each.y < 0: each.y += WINDOW_HEIGHT
-        if each.x > WINDOW_WIDTH: each.x -= WINDOW_WIDTH
-        if each.x < 0: each.x += WINDOW_WIDTH
+        each = wrap(each)
+        #if each.y > WINDOW_HEIGHT: each.y -= WINDOW_HEIGHT
+        #if each.y < 0: each.y += WINDOW_HEIGHT
+        #if each.x > WINDOW_WIDTH: each.x -= WINDOW_WIDTH
+        #if each.x < 0: each.x += WINDOW_WIDTH
 
 #Draw asteroids to screen.
 def drawAsteroids(asteroids, win):
