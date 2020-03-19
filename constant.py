@@ -25,5 +25,5 @@ SENSORRANGE = WINDOW_HEIGHT/2                                                  #
 FRAMES_PER_ACTION = 6                                                           #
 QTRAINING = True                                                               #Toggle for Q-Learning.
 SAVEQMATRIX = False                                                              #Toggle for output of Q-Matrix.
-DRAW_SENSORS = True                                                             #
+DRAW_SENSORS = False                                                             #
 DISPLAY_GAME = True
