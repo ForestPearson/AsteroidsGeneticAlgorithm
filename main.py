@@ -21,7 +21,7 @@ FPS = 60                                                                        
 SENSORCOUNT = 8                                                                 #Ship sensors, limited by Q.sensors[].
 SENSORRANGE = WINDOW_HEIGHT/2                                                   #
 FRAMES_PER_ACTION = 6                                                           #
-QTRAINING = True                                                                #Toggle for Q-Learning.
+QTRAINING = False                                                                #Toggle for Q-Learning.
 SAVEQMATRIX = False                                                             #Toggle for output of Q-Matrix.
 DRAW_SENSORS = False                                                             #
 DISPLAY_GAME = True
@@ -160,8 +160,10 @@ def main():
         if (QTRAINING and currentaction == 'Shoot') or keys[pygame.K_SPACE]:
             if not firing: projectiles.append(fireProjectile(player, ship))
             firing = True
-        if not (QTRAINING and currentaction == 'Shoot') or keys[pygame.K_SPACE]:
-            firing = False
+        if QTRAINING:
+            if currentaction != 'Shoot': firing = False
+        else:
+             if not keys[pygame.K_SPACE]: firing = False
 
         #Reset the screen before drawing.
         win.fill(BLACK)
@@ -182,7 +184,7 @@ def main():
 
         #Update player, asteroid and projectile positions.
         updatePlayer(player)
-        updateAsteroids(asteroids)
+        LEVEL = updateAsteroids(asteroids, LEVEL)
         updateProjectiles(projectiles)
 
         #Draw the game.
@@ -198,6 +200,10 @@ def main():
 
     pygame.quit()
     if SAVEQMATRIX: saveQmatrix(Q.Q_Matrix)
+
+def simulate(player, asteroids, projectiles, LEVEL, SCORE, steps):
+    for step in range(steps):
+        step = 0
 
 #Generate a projectile in the direction the player is facing.
 def fireProjectile(player, ship):
@@ -278,9 +284,13 @@ def generateAsteroids(asteroids, LEVEL):
     return asteroids
 
 #Calculate new position of each asteroid, wrapping as necessary.
-def updateAsteroids(asteroids):
+def updateAsteroids(asteroids, LEVEL):
+    if len(asteroids) == 0:
+        LEVEL += 1
+        asteroids = generateAsteroids(asteroids, LEVEL)
     for asteroid in asteroids:
         updatePosition(asteroid)
+    return LEVEL
 
 #Draw asteroids to screen.
 def drawAsteroids(asteroids, win):
