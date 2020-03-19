@@ -38,6 +38,7 @@ class Player:
     respawning = RESPAWNTIME
     state = ('None', 'None', 'None', 'None', 'None', 'None', 'None', 'None')
     score = 0
+    thrustvectors = []
 
     def __init__(self, x, y, rotation):
         self.x = x
@@ -45,6 +46,8 @@ class Player:
         self.rotation = rotation
         speed = 0
         direction = 0
+        for each in range(VECTORCOUNT):
+            self.thrustvectors.append([0, 0])
 
 class Projectile:
     x = 100
@@ -115,11 +118,6 @@ def main():
     statedisplay = show_state.get_rect()
     statedisplay.center = (535, 150)
 
-    #Initialize thrust vectors.
-    thrustvectors = []
-    for each in range(VECTORCOUNT):
-        thrustvectors.append([0, 0])
-
     #Initialize projectiles.
     projectiles = []
     firing = False
@@ -156,8 +154,8 @@ def main():
             player.rotation -= 5
         if keys[pygame.K_UP] or currentaction == 'Thrust':
             if player.speed <= MAXSPEED: player.speed += THRUST
-            del thrustvectors[0]
-            thrustvectors.append([player.speed, player.rotation])
+            del player.thrustvectors[0]
+            player.thrustvectors.append([player.speed, player.rotation])
         if keys[pygame.K_SPACE] or currentaction == 'Shoot':
             if not firing: projectiles.append(fireProjectile(player, ship))
             firing = True
@@ -180,10 +178,6 @@ def main():
         sense(player, asteroids, win)
         show_state = font.render('State: '+' '.join(player.state), True, WHITE, BLACK)
         win.blit(show_state, statedisplay)
-
-        #Update player thrust vectors
-        if len(thrustvectors) > 0: updateDirection(player, thrustvectors)
-        decayThrust(thrustvectors)
 
         #Update player, asteroid and projectile positions.
         updatePlayer(player)
@@ -243,6 +237,8 @@ def updateDirection(player, thrustvectors):
 
 #Calculate new ship position using velocity, wrapping as necessary.
 def updatePlayer(player):
+    updateDirection(player, player.thrustvectors)
+    decayThrust(player.thrustvectors)
     angle = math.radians(player.direction)
     xcomp = math.cos(angle)
     ycomp = math.sin(angle)
