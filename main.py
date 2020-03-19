@@ -3,29 +3,8 @@ import math
 import random
 import QLearning as Q
 import os.path
-
-WINDOW_WIDTH = 1280                                                             #
-WINDOW_HEIGHT = 920                                                             #
-BLACK = (0, 0, 0)                                                               #
-WHITE = (255, 255, 255)                                                         #
-MAXSPEED = 10                                                                   #
-THRUST = 2.5                                                                    #Thrust vector increase per input.
-DECAY = 0.05                                                                    #Thrust vector decay per frame.
-VECTORCOUNT = 30                                                                #Number of thrust vectors
-BREAKPOINTS = [0, 100, 50, 20]                                                  #Points awarded for breaking each size.
-DEATHPOINTS = -1000                                                             #Points deducted for getting hit.
-RESPAWNTIME = 6000                                                              #Invulnerability time in milliseconds.
-ASTEROIDSCALE = 30                                                              #
-PLAYERSIZE = 20                                                                 #
-FPS = 60                                                                        #
-SENSORCOUNT = 8                                                                 #Ship sensors, limited by Q.sensors[].
-SENSORRANGE = WINDOW_HEIGHT/2                                                   #
-FRAMES_PER_ACTION = 6                                                           #
-QTRAINING = True                                                               #Toggle for Q-Learning.
-SAVEQMATRIX = False                                                              #Toggle for output of Q-Matrix.
-DRAW_SENSORS = True                                                             #
-DISPLAY_GAME = False
-
+import constant
+                                                       #                                                            #
 class Player:
     x = 100
     y = 100
@@ -35,7 +14,7 @@ class Player:
     lives = 3
     IMAGE = "player.png"
     hit = False
-    respawning = RESPAWNTIME
+    respawning = constant.RESPAWNTIME
     state = ('None', 'None', 'None', 'None', 'None', 'None', 'None', 'None')
     score = 0
 
@@ -51,14 +30,14 @@ class Projectile:
     y = 100
     rotation = 0
     velocity = 15
-    lifespan = WINDOW_WIDTH/2
+    lifespan = constant.WINDOW_WIDTH/2
 
     def __init__(self, x, y, rotation):
         self.x = x
         self.y = y
         self.rotation = rotation
         velocity = 15
-        lifespan = WINDOW_WIDTH/2
+        lifespan = constant.WINDOW_WIDTH/2
 
 class Asteroid:
     x = 50
@@ -79,7 +58,7 @@ class Asteroid:
 def main():
     #Initialize pygame and window surface.
     pygame.init()
-    win = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+    win = pygame.display.set_mode((constant.WINDOW_WIDTH, constant.WINDOW_HEIGHT))
     pygame.display.set_caption("Asteroids Genetic Algorithm")
 
     #Initialize Q-Learning.
@@ -95,7 +74,7 @@ def main():
     SCORE = 0
     font = pygame.font.Font('Vector_Battle.ttf', 24)
     font.set_bold(True)
-    show_score = font.render('SCORE: 0', True, WHITE, BLACK)
+    show_score = font.render('SCORE: 0', True, constant.WHITE, constant.BLACK)
     scoreboard = show_score.get_rect()
     scoreboard.center = (150, 50)
 
@@ -105,19 +84,19 @@ def main():
     asteroids = generateAsteroids(asteroids, LEVEL)
 
     #Initialize player sprite.
-    player = Player(WINDOW_WIDTH/2, WINDOW_HEIGHT/2, 0)
+    player = Player(constant.WINDOW_WIDTH/2, constant.WINDOW_HEIGHT/2, 0)
     ship = pygame.image.load(player.IMAGE)
     ship = pygame.transform.rotate(ship, -90)
-    ship = pygame.transform.scale(ship, (PLAYERSIZE, PLAYERSIZE))
+    ship = pygame.transform.scale(ship, (constant.PLAYERSIZE, constant.PLAYERSIZE))
 
     #Initialize state display.
-    show_state = font.render('State: '+' '.join(player.state), True, WHITE, BLACK)
+    show_state = font.render('State: '+' '.join(player.state), True, constant.WHITE, constant.BLACK)
     statedisplay = show_state.get_rect()
     statedisplay.center = (535, 150)
 
     #Initialize thrust vectors.
     thrustvectors = []
-    for each in range(VECTORCOUNT):
+    for each in range(constant.VECTORCOUNT):
         thrustvectors.append([0, 0])
 
     #Initialize projectiles.
@@ -135,9 +114,9 @@ def main():
                 run = False
 
         #If using Q-Learning, train the Q-Matrix when the action timer runs out.
-        if QTRAINING:
+        if constant.QTRAINING:
             actiontimer += 1
-            if actiontimer == FRAMES_PER_ACTION:
+            if actiontimer == constant.FRAMES_PER_ACTION:
                 actiontimer = 0
                 reward = SCORE - oldscore
                 oldscore = SCORE
@@ -155,7 +134,7 @@ def main():
         if keys[pygame.K_RIGHT] or currentaction == 'Right':
             player.rotation -= 5
         if keys[pygame.K_UP] or currentaction == 'Thrust':
-            if player.speed <= MAXSPEED: player.speed += THRUST
+            if player.speed <= constant.MAXSPEED: player.speed += constant.THRUST
             del thrustvectors[0]
             thrustvectors.append([player.speed, player.rotation])
         if keys[pygame.K_SPACE] or currentaction == 'Shoot':
@@ -165,7 +144,7 @@ def main():
             firing = False
 
         #Reset the screen before drawing.
-        win.fill(BLACK)
+        win.fill(constant.BLACK)
 
         #If level cleared, go to next level.
         if len(asteroids) == 0:
@@ -176,20 +155,20 @@ def main():
         SCORE += detectPlayerColision(asteroids, player)
         projectiles = detectProjectileColision(asteroids, projectiles)
         SCORE += splitAsteroids(asteroids)
-        show_score = font.render('SCORE: '+str(SCORE), True, WHITE, BLACK)
+        show_score = font.render('SCORE: '+str(SCORE), True, constant.WHITE, constant.BLACK)
         win.blit(show_score, scoreboard)
         player.score = SCORE
 
         #Respawn if hit.
         if player.hit:
             player.hit = False
-            player.respawning = RESPAWNTIME
+            player.respawning = constant.RESPAWNTIME
         if player.respawning > 0:
-             player.respawning -= FPS
+             player.respawning -= constant.FPS
 
         #Detect and display current state.
         sense(player, asteroids, win)
-        show_state = font.render('State: '+' '.join(player.state), True, WHITE, BLACK)
+        show_state = font.render('State: '+' '.join(player.state), True, constant.WHITE, constant.BLACK)
         win.blit(show_state, statedisplay)
 
         #Update player thrust vectors
@@ -202,16 +181,16 @@ def main():
         updateProjectiles(projectiles)
 
         #Draw the game.
-        if DISPLAY_GAME:
+        if constant.DISPLAY_GAME:
             drawPlayer(player, ship, win)
             drawAsteroids(asteroids, win)
             drawProjectiles(projectiles, win)
 
         pygame.display.update()
-        timer.tick(FPS)
+        timer.tick(constant.FPS)
 
     pygame.quit()
-    if SAVEQMATRIX: saveQmatrix(Q.Q_Matrix)
+    if constant.SAVEQMATRIX: saveQmatrix(Q.Q_Matrix)
 
 #Generate a projectile in the direction the player is facing.
 def fireProjectile(player, ship):
@@ -225,10 +204,10 @@ def updateProjectiles(projectiles):
     for each in projectiles:
         each.x += math.cos(math.radians(each.rotation))*each.velocity
         each.y -= math.sin(math.radians(each.rotation))*each.velocity
-        if each.y > WINDOW_HEIGHT: each.y -= WINDOW_HEIGHT
-        if each.y < 0: each.y += WINDOW_HEIGHT
-        if each.x > WINDOW_WIDTH: each.x -= WINDOW_WIDTH
-        if each.x < 0: each.x += WINDOW_WIDTH
+        if each.y > constant.WINDOW_HEIGHT: each.y -= constant.WINDOW_HEIGHT
+        if each.y < 0: each.y += constant.WINDOW_HEIGHT
+        if each.x > constant.WINDOW_WIDTH: each.x -= constant.WINDOW_WIDTH
+        if each.x < 0: each.x += constant.WINDOW_WIDTH
         each.lifespan -= each.velocity
     for each in projectiles:
         if each.lifespan <= 0: projectiles.remove(each)
@@ -248,7 +227,7 @@ def updateDirection(player, thrustvectors):
     xavg = sum(xcomps)/len(thrustvectors)
     yavg = sum(ycomps)/len(thrustvectors)
     player.speed = math.sqrt(xavg**2 + yavg**2)
-    player.direction = math.degrees(math.atan2(yavg/MAXSPEED,xavg/MAXSPEED))
+    player.direction = math.degrees(math.atan2(yavg/constant.MAXSPEED,xavg/constant.MAXSPEED))
 
 #Calculate new ship position using velocity, wrapping as necessary.
 def updatePosition(player):
@@ -257,10 +236,10 @@ def updatePosition(player):
     ycomp = math.sin(angle)
     player.x += xcomp*player.speed
     player.y -= ycomp*player.speed
-    if player.y > WINDOW_HEIGHT: player.y -= WINDOW_HEIGHT
-    if player.y < 0: player.y += WINDOW_HEIGHT
-    if player.x > WINDOW_WIDTH: player.x -= WINDOW_WIDTH
-    if player.x < 0: player.x += WINDOW_WIDTH
+    if player.y > constant.WINDOW_HEIGHT: player.y -= constant.WINDOW_HEIGHT
+    if player.y < 0: player.y += constant.WINDOW_HEIGHT
+    if player.x > constant.WINDOW_WIDTH: player.x -= constant.WINDOW_WIDTH
+    if player.x < 0: player.x += constant.WINDOW_WIDTH
 
 #Draw player to screen.
 def drawPlayer(player, ship, win):
@@ -272,16 +251,16 @@ def drawPlayer(player, ship, win):
 #Decay each thrust vector.
 def decayThrust(thrustvectors):
     for each in thrustvectors:
-        if each[0] >= DECAY: each[0] -= DECAY
+        if each[0] >= constant.DECAY: each[0] -= constant.DECAY
 
 #Generate some random asteroids based on current level.
 def generateAsteroids(asteroids, LEVEL):
     INITIAL_DENSITY = 3
     for each in range(LEVEL + INITIAL_DENSITY):
-        newasteroid = Asteroid(random.random()*WINDOW_WIDTH, random.random()*WINDOW_HEIGHT, random.random()*360)
+        newasteroid = Asteroid(random.random()*constant.WINDOW_WIDTH, random.random()*constant.WINDOW_HEIGHT, random.random()*360)
         asteroids.append(newasteroid)
         asteroids[each].sprite = pygame.image.load(asteroids[each].IMAGE)
-        asteroids[each].sprite = pygame.transform.scale(asteroids[each].sprite, (3*ASTEROIDSCALE, 3*ASTEROIDSCALE))
+        asteroids[each].sprite = pygame.transform.scale(asteroids[each].sprite, (3*constant.ASTEROIDSCALE, 3*constant.ASTEROIDSCALE))
     return asteroids
 
 #Calculate new position of each asteroid, wrapping as necessary.
@@ -289,10 +268,10 @@ def updateAsteroids(asteroids):
     for each in asteroids:
         each.x += math.cos(math.radians(each.rotation))*each.velocity
         each.y -= math.sin(math.radians(each.rotation))*each.velocity
-        if each.y > WINDOW_HEIGHT: each.y -= WINDOW_HEIGHT
-        if each.y < 0: each.y += WINDOW_HEIGHT
-        if each.x > WINDOW_WIDTH: each.x -= WINDOW_WIDTH
-        if each.x < 0: each.x += WINDOW_WIDTH
+        if each.y > constant.WINDOW_HEIGHT: each.y -= constant.WINDOW_HEIGHT
+        if each.y < 0: each.y += constant.WINDOW_HEIGHT
+        if each.x > constant.WINDOW_WIDTH: each.x -= constant.WINDOW_WIDTH
+        if each.x < 0: each.x += constant.WINDOW_WIDTH
 
 #Draw asteroids to screen.
 def drawAsteroids(asteroids, win):
@@ -303,19 +282,19 @@ def drawAsteroids(asteroids, win):
 def detectPlayerColision(asteroids, player):
     if not player.hit and not player.respawning:
         for asteroid in asteroids:
-            diameter = asteroid.scale*ASTEROIDSCALE
+            diameter = asteroid.scale*constant.ASTEROIDSCALE
             if player.x >= asteroid.x and player.y >= asteroid.y and player.x <= asteroid.x + diameter and player.y <= asteroid.y + diameter:
                 player.hit = True
-                player.x = WINDOW_WIDTH/2
-                player.y = WINDOW_HEIGHT/2
-                return DEATHPOINTS
+                player.x = constant.WINDOW_WIDTH/2
+                player.y = constant.WINDOW_HEIGHT/2
+                return constant.DEATHPOINTS
     return 0
 
 #Detect whether any projectiles have hit any asteroids.
 def detectProjectileColision(asteroids, projectiles):
     for asteroid in asteroids:
         for bullet in projectiles:
-            diameter = asteroid.scale*ASTEROIDSCALE
+            diameter = asteroid.scale*constant.ASTEROIDSCALE
             if bullet.x >= asteroid.x and bullet.y >= asteroid.y and bullet.x <= asteroid.x + diameter and bullet.y <= asteroid.y + diameter:
                 asteroid.dead = True
                 projectiles.remove(bullet)
@@ -326,7 +305,7 @@ def splitAsteroids(asteroids):
     score = 0
     for each in asteroids:
         if each.dead == True:
-            score += BREAKPOINTS[each.scale]
+            score += constant.BREAKPOINTS[each.scale]
             if each.scale > 1:
                 newAsteroid1 = Asteroid(each.x, each.y, random.random()*360)
                 newAsteroid2 = Asteroid(each.x, each.y, random.random()*360)
@@ -334,8 +313,8 @@ def splitAsteroids(asteroids):
                 newAsteroid2.scale = each.scale - 1
                 newAsteroid1.velocity = each.velocity + 1
                 newAsteroid2.velocity = each.velocity + 1
-                newAsteroid1.sprite = pygame.transform.scale(newAsteroid1.sprite, (newAsteroid1.scale*ASTEROIDSCALE, newAsteroid1.scale*ASTEROIDSCALE))
-                newAsteroid2.sprite = pygame.transform.scale(newAsteroid2.sprite, (newAsteroid2.scale*ASTEROIDSCALE, newAsteroid2.scale*ASTEROIDSCALE))
+                newAsteroid1.sprite = pygame.transform.scale(newAsteroid1.sprite, (newAsteroid1.scale*constant.ASTEROIDSCALE, newAsteroid1.scale*constant.ASTEROIDSCALE))
+                newAsteroid2.sprite = pygame.transform.scale(newAsteroid2.sprite, (newAsteroid2.scale*constant.ASTEROIDSCALE, newAsteroid2.scale*constant.ASTEROIDSCALE))
                 asteroids.append(newAsteroid1)
                 asteroids.append(newAsteroid2)
             asteroids.remove(each)
@@ -355,23 +334,23 @@ def sense(player, asteroids, win):
     angle = 90
     x = 0
     y = 1
-    ship = [player.x+PLAYERSIZE/2, player.y+PLAYERSIZE/2]
+    ship = [player.x+constant.PLAYERSIZE/2, player.y+constant.PLAYERSIZE/2]
     result = []
-    for sensor in range(SENSORCOUNT):
-        edge = [ship[x] + math.cos(math.radians(angle))*SENSORRANGE,
-                ship[y] - math.sin(math.radians(angle))*SENSORRANGE]
+    for sensor in range(constant.SENSORCOUNT):
+        edge = [ship[x] + math.cos(math.radians(angle))*constant.SENSORRANGE,
+                ship[y] - math.sin(math.radians(angle))*constant.SENSORRANGE]
         ray = [ship, edge]
-        if DRAW_SENSORS: pygame.draw.line(win, (255, 255, 255), ship, edge, 3)
+        if constant.DRAW_SENSORS: pygame.draw.line(win, (255, 255, 255), ship, edge, 3)
         result.append('None')
         for asteroid in asteroids:
-            diameter = asteroid.scale*ASTEROIDSCALE
+            diameter = asteroid.scale*constant.ASTEROIDSCALE
             UL = [asteroid.x, asteroid.y]
             UR = [asteroid.x + diameter, asteroid.y]
             LL = [asteroid.x, asteroid.y + diameter]
             LR = [asteroid.x + diameter, asteroid.y + diameter]
             if lines_intersect(ray, [UL, UR]) or lines_intersect(ray, [UR, LR]) or lines_intersect(ray, [LL, LR]) or lines_intersect(ray, [UL, LL]):
                 result[sensor] = (Q.results[asteroid.scale])
-        angle += 360/SENSORCOUNT
+        angle += 360/constant.SENSORCOUNT
     player.state = tuple(result)
 
 #Save Q-Matrix to a .csv file. First column: state #, columns 2-5: Q-Scores for actions in Q.actions[]
