@@ -126,7 +126,7 @@ def main():
         population = [GA.random_chromosome() for _ in range(GA.PopulationSize)]
         fitness_scores = [0 for i in range(GA.PopulationSize)]
         for each in range(len(population)):
-            fitness_scores[each] = simulate(player, asteroids, projectiles, LEVEL, SCORE, GA.SimulationLength, population[each])
+            fitness_scores[each] = simulate(newGameContainer(), population[each])
             print(fitness_scores[each])
         average = GA.average_fitness(fitness_scores)
         print("avg fitness: "+str(average))
@@ -134,11 +134,12 @@ def main():
         i = 0
         while i < GA.NumIterations:
             i += 1
-            population = GA.breed(population, fitness_scores)
-            for each in range(len(population)):
-                fitness_scores[each] = simulate(player, asteroids, projectiles, LEVEL, SCORE, GA.SimulationLength, population[each])
-                average = GA.average_fitness(fitness_scores)
-                print("avg-fitness: "+str(average))
+            population, fitness_scores = GA.breed(population, fitness_scores)
+            #for each in range(len(population)):
+                #fitness_scores[each] = simulate(newGameContainer(), population[each])
+                #print(fitness_scores[each])
+            average = GA.average_fitness(fitness_scores)
+            print("avg-fitness: "+str(average))
 
         #print("Done!")
 
@@ -207,7 +208,13 @@ def drawGame(player, ship, asteroids, projectiles, scoreboard, SCORE, statedispl
     if C.DRAW_SENSORS: drawSensors(rays, win)
     pygame.display.update()
 
-def simulate(player, asteroids, projectiles, LEVEL, SCORE, steps, CHROMOSOME):
+def simulate(game, CHROMOSOME):
+    player = game[0]
+    asteroids = game[1]
+    projectiles = game[2]
+    LEVEL = game[3]
+    SCORE = game[4]
+    steps = game[5]
     action = 0
     for step in range(steps):
         sense(player, asteroids)
@@ -236,6 +243,16 @@ def executeAction(player, projectiles, action):
         player.firing = True
     if action != 'Shoot': player.firing = False
     return player
+
+def newGameContainer():
+    player = Player(C.WINDOW_WIDTH/2, C.WINDOW_HEIGHT/2, 0)
+    LEVEL = 1
+    asteroids = []
+    asteroids = generateAsteroids(asteroids, LEVEL)
+    projectiles = []
+    SCORE = 0
+    game = [player, asteroids, projectiles, LEVEL, SCORE, GA.SimulationLength]
+    return game
 
 #Generate a projectile in the direction the player is facing.
 def fireProjectile(player):
