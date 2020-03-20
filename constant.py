@@ -1,8 +1,12 @@
+import itertools
+
 
 #Genetic algorithm
 
 
 #Q-learning
+stepsize = 0.2
+discount = 0.9
 
 #Game
 WINDOW_WIDTH = 1280                                                             #
@@ -27,3 +31,11 @@ QTRAINING = True                                                               #
 SAVEQMATRIX = False                                                              #Toggle for output of Q-Matrix.
 DRAW_SENSORS = False                                                             #
 DISPLAY_GAME = True
+
+sensors = ['DN', 'NE', 'DE', 'SE', 'DS' , 'SW' , 'DW' , 'NW']
+results = ['None', 'Small', 'Medium', 'Large']
+actions = ['Left', 'Right', 'Thrust', 'Shoot']
+state = []
+
+def initialize():
+    for s in itertools.product(results, repeat = len(sensors)): state.append(s)

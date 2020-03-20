@@ -3,24 +3,78 @@ import math
 import pygame
 import main
 import QLearning as Q
+import constant as C
 
 #Tunable parameters
-PopulationSize = 40								#Number of chromosomes.
+PopulationSize = 10								#Number of chromosomes.
 NumIterations = 10  							#Number of generations.
+SimulationLength = 1000
 MutationPct = 0.45								#Liklihood of mutation.
 Replacement = False								#Multiple recombination.
 Kickstart = True								#Start with unique rows.
 Elitism = True									#Better parents persist.
 Resets = True									#Allow reset when stale.
 StaleFactor = 0.05								#Staleness before reset.
-BOARDSIZE = 8									#Boardsize for n-queens.
+statespace = len(C.results)**len(C.sensors)
 
 def random_chromosome():
-    statespace = len(Q.results)**len(Q.sensors)
-    return [random.randint(1,(len(Q.actions)))-1 for i in range(statespace)]
+    return [random.randint(1,(len(C.actions)))-1 for i in range(statespace)]
 
 def updateAction(player, chromosome):
-    action = Q.actions[chromosome[Q.Q.index(player.state)]]
+    return C.actions[chromosome[C.state.index(player.state)]]
+
+def average_fitness(fitness_scores):
+    total_fitness = 0
+    for each in range(PopulationSize):
+        total_fitness += fitness_scores[each]
+    return total_fitness/PopulationSize
+
+def selection_chance(fitness_scores, chromosome, remaining):
+    this_fitness = fitness_scores[chromosome]
+    fit_sum = 0
+    for each in range(remaining):
+        fit_sum += fitness_scores[each]
+    if fit_sum == 0: return 0
+    else: return this_fitness/fit_sum
+
+def select(fitness_scores, remaining):
+    r = random.random()
+    lower = upper = 0
+    for chromosome in range(remaining):
+        lower = upper
+        upper += selection_chance(fitness_scores, chromosome, remaining)
+        if r > lower and r < upper: return chromosome
+
+def select_pair(fitness_scores, remaining):
+    p1 = select(fitness_scores, remaining)
+    p2 = p1
+    while p2 == p1: p2 = select(fitness_scores, remaining)
+    if Replacement: return [p1, p2]
+    else: return [p1, p2]
+
+def breed(population, fitness_scores):
+    newPopulation = []
+    remaining = PopulationSize
+    while remaining > 0:
+        if Replacement: p = select_pair(fitnes_scoress, PopulationSize)
+        else: p = select_pair(fitness_scores, remaining)
+        p1 = population[p[0]]
+        p2 = population[p[1]]
+        r = random.randrange(1, statespace)
+
+        c1 = p1[:r]+p2[r:]
+        c2 = p2[:r]+p1[r:]
+        if random.random() < MutationPct:
+            g1 = random.randrange(statespace)
+            g2 = random.randrange(statespace)
+            c1[g1], c1[g2] = c1[g2], c1[g1]
+        newPopulation.append(c1)
+        newPopulation.append(c2)
+        remaining -= 2
+    return newPopulation
+
+def best_solution(fitness_scores):
+    return fitness_scores.index(max(fitness_scores))
 
 #calculate the fitness of a chromosome
 def fitness(chromosome):

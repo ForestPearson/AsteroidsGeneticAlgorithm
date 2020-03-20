@@ -6,9 +6,8 @@ import GA
 import os.path
 import constant as C
 
-MODE = 1
+MODE = 2                                                                        #0 = Player control, 1 = Q-Learning, 2 = GA
 
-                                   #                                                            #
 class Player:
     x = 100
     y = 100
@@ -68,10 +67,14 @@ def main():
     QLearning = 1
     Genetic = 2
 
+    C.initialize()
+
     #Initialize pygame and window surface.
-    pygame.init()
-    win = pygame.display.set_mode((C.WINDOW_WIDTH, C.WINDOW_HEIGHT))
-    pygame.display.set_caption("Asteroids Genetic Algorithm")
+    if MODE != 2:
+        pygame.init()
+        win = pygame.display.set_mode((C.WINDOW_WIDTH, C.WINDOW_HEIGHT))
+        pygame.display.set_caption("Asteroids Genetic Algorithm")
+        timer =  pygame.time.Clock()
 
     #Initialize Q-Learning.
     if MODE == QLearning:
@@ -91,7 +94,7 @@ def main():
 
     #Initialize scoreboard.
     SCORE = 0
-    if C.DISPLAY_GAME:
+    if C.DISPLAY_GAME and MODE != 2:
         font = pygame.font.Font('Vector_Battle.ttf', 24)
         font.set_bold(True)
         show_score = font.render('SCORE: 0', True, C.WHITE, C.BLACK)
@@ -100,7 +103,7 @@ def main():
 
     #Initialize player sprite.
     player = Player(C.WINDOW_WIDTH/2, C.WINDOW_HEIGHT/2, 0)
-    if C.DISPLAY_GAME:
+    if C.DISPLAY_GAME and MODE != 2:
         ship = pygame.image.load(player.IMAGE)
         ship = pygame.transform.rotate(ship, -90)
         ship = pygame.transform.scale(ship, (C.PLAYERSIZE, C.PLAYERSIZE))
@@ -115,16 +118,29 @@ def main():
 
     #Initialize timers.
     respawntime = 0
-    timer =  pygame.time.Clock()
+
 
     run = True
     if MODE == Genetic:
         run = False
         population = [GA.random_chromosome() for _ in range(GA.PopulationSize)]
+        fitness_scores = [0 for i in range(GA.PopulationSize)]
+        for each in range(len(population)):
+            fitness_scores[each] = simulate(player, asteroids, projectiles, LEVEL, SCORE, GA.SimulationLength, population[each])
+            print(fitness_scores[each])
+        average = GA.average_fitness(fitness_scores)
+        print("avg fitness: "+str(average))
+
         i = 0
         while i < GA.NumIterations:
-            population = GA.genetic_algorithm(i, GA.NumIterations, population, 10000000)
             i += 1
+            population = GA.breed(population, fitness_scores)
+            for each in range(len(population)):
+                fitness_scores[each] = simulate(player, asteroids, projectiles, LEVEL, SCORE, GA.SimulationLength, population[each])
+                average = GA.average_fitness(fitness_scores)
+                print("avg-fitness: "+str(average))
+
+        #print("Done!")
 
     while run:
         for event in pygame.event.get():
@@ -138,14 +154,15 @@ def main():
                 actiontimer = 0
                 reward = SCORE - oldscore
                 oldscore = SCORE
-                nextbest = Q.Q_Matrix[Q.Q.index(player.state)][Q.greedy_choice(player.state)]
-                Q.Q_Matrix[oldstateval][action] = prevQscore + Q.stepsize*(reward + Q.discount*nextbest - prevQscore)
-                oldstateval = Q.Q.index(player.state)
+                nextbest = Q.Q_Matrix[C.state.index(player.state)][Q.greedy_choice(player.state)]
+                Q.Q_Matrix[oldstateval][action] = prevQscore + C.stepsize*(reward + C.discount*nextbest - prevQscore)
+                oldstateval = C.state.index(player.state)
                 action = Q.choose_action(player.state)
                 prevQscore = Q.Q_Matrix[oldstateval][action]
-                currentaction = Q.actions[action]
+                currentaction = C.actions[action]
 
         #Choose an action, based on current key press or Q-Learning decision.
+
         keys = pygame.key.get_pressed()
         if (MODE == QLearning and currentaction == 'Left') or keys[pygame.K_LEFT]:
             player.rotation += 5
@@ -177,7 +194,7 @@ def main():
 
         timer.tick(C.FPS)
 
-    pygame.quit()
+    if MODE != 2: pygame.quit()
     if C.SAVEQMATRIX: saveQmatrix(Q.Q_Matrix)
 
 def drawGame(player, ship, asteroids, projectiles, scoreboard, SCORE, statedisplay, rays, font, win):
@@ -194,13 +211,31 @@ def simulate(player, asteroids, projectiles, LEVEL, SCORE, steps, CHROMOSOME):
     action = 0
     for step in range(steps):
         sense(player, asteroids)
+        action = GA.updateAction(player, CHROMOSOME)
+        player = executeAction(player, projectiles, action)
         projectiles = detectProjectileColision(asteroids, projectiles)
         SCORE += updateScore(player, asteroids)
+        if SCORE < 0: SCORE = 0
         player.score = SCORE
         updatePlayer(player)
         LEVEL = updateAsteroids(asteroids, LEVEL)
         updateProjectiles(projectiles)
-        action = GA.updateAction(player, CHROMOSOME)
+    return SCORE
+
+def executeAction(player, projectiles, action):
+    if action == 'Left':
+        player.rotation += 5
+    if action == 'Right':
+        player.rotation -= 5
+    if action == 'Thrust':
+        if player.speed <= C.MAXSPEED: player.speed += C.THRUST
+        del player.thrustvectors[0]
+        player.thrustvectors.append([player.speed, player.rotation])
+    if action == 'Shoot':
+        if not player.firing: projectiles.append(fireProjectile(player))
+        player.firing = True
+    if action != 'Shoot': player.firing = False
+    return player
 
 #Generate a projectile in the direction the player is facing.
 def fireProjectile(player):
@@ -372,7 +407,7 @@ def sense(player, asteroids):
             LL = [asteroid.x, asteroid.y + diameter]
             LR = [asteroid.x + diameter, asteroid.y + diameter]
             if lines_intersect(ray, [UL, UR]) or lines_intersect(ray, [UR, LR]) or lines_intersect(ray, [LL, LR]) or lines_intersect(ray, [UL, LL]):
-                result[sensor] = (Q.results[asteroid.scale])
+                result[sensor] = (C.results[asteroid.scale])
         angle += 360/C.SENSORCOUNT
     player.state = tuple(result)
     return rays
