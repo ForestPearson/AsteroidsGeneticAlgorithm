@@ -9,7 +9,7 @@ import main
 #Tunable parameters
 PopulationSize = 10								#Number of chromosomes.
 NumIterations = 10  							#Number of generations.
-SimulationLength = 1000
+SimulationLength = 1000                         #Number of frames to simulate
 MutationPct = 0.45								#Liklihood of mutation.
 Replacement = True								#Multiple recombination.
 Kickstart = True								#Start with unique rows.
@@ -67,7 +67,6 @@ def breed(population, fitness_scores):
         else: p, population = select_pair(population, fitness_scores, remaining)
         p1 = p[0]
         p2 = p[1]
-        #print("p1, p2:",p)
         r = random.randrange(1, statespace)
         c1 = p1[:r]+p2[r:]
         c2 = p2[:r]+p1[r:]

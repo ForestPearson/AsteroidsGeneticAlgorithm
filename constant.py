@@ -32,7 +32,7 @@ SAVEQMATRIX = False                                                             
 DRAW_SENSORS = False                                                             #
 DISPLAY_GAME = True
 
-sensors = ['DN', 'NE', 'DE', 'SE', 'DS' , 'SW' , 'DW' , 'NW']
+sensors = ['F', 'FR', 'R', 'BR', 'B' , 'BL' , 'L' , 'FL']
 results = ['None', 'Small', 'Medium', 'Large']
 actions = ['Left', 'Right', 'Thrust', 'Shoot']
 state = []
