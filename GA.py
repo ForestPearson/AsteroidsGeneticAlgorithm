@@ -40,6 +40,7 @@ def selection_chance(fitness_scores, chromosome, remaining):
 def select(fitness_scores, remaining):
     r = random.random()
     lower = upper = 0
+    #TODO: surround this in an infinite loop so that it cant ever not find a parent to select
     for chromosome in range(remaining):
         lower = upper
         upper += selection_chance(fitness_scores, chromosome, remaining)
