@@ -1,31 +1,22 @@
-import random, itertools
+import random
+import constant as C
 
-sensors = ['DN', 'NE', 'DE', 'SE', 'DS' , 'SW' , 'DW' , 'NW']
-results = ['None', 'Small', 'Medium', 'Large']
-actions = ['Left', 'Right', 'Thrust', 'Shoot']
-episodes = 5000
-lifespan = 200
-stepsize = 0.2
-discount = 0.9
+#episodes = 5000
+#lifespan = 200
 takerisk = 0.1
-
 Q_Matrix = []
-Q = []
 
 def initialize():
-      for s in itertools.product(results, repeat = len(sensors)): Q.append(s)
-      Q_Matrix = [[0 for a in range(len(actions))]for s in range(len(Q))]
+      Q_Matrix = [[0 for a in range(len(C.actions))]for s in range(len(C.state))]
       return Q_Matrix
 
 def choose_action(state):
-    if random.random() < takerisk: return random.choice(range(len(actions)))
+    if random.random() < takerisk: return random.choice(range(len(C.actions)))
     else: return greedy_choice(state)
 
 def greedy_choice(state):
-    #print(state)
-    #print(Q.index(state))
-    best = max(Q_Matrix[Q.index(state)])
-    bests = [i for i, x in enumerate(Q_Matrix[Q.index(state)]) if x == best]
+    best = max(Q_Matrix[C.state.index(state)])
+    bests = [i for i, x in enumerate(Q_Matrix[C.state.index(state)]) if x == best]
     return random.choice(bests)
 
 def act(action, player):
@@ -53,14 +44,14 @@ def act(action, player):
             finalscore += asteroidValue
 
 def train(player, Q_Matrix):
-    initstate = Q.index(player.state)
+    initstate = C.state.index(player.state)
     action = choose_action(player.state)
     prev = Q_Matrix[initstate][action]
-    reward = act(actions[action], player)
-    nextbest = Q_Matrix[Q.index(player.state)][greedy_choice(player.state)]
+    reward = act(C.actions[action], player)
+    nextbest = Q_Matrix[C.state.index(player.state)][greedy_choice(player.state)]
     Q_Matrix[initstate][action] = prev + stepsize*(reward + discount*nextbest - prev)
     return Q_Matrix
 
 def step(player):
     action = choose_action(player.state)
-    reward = act(actions[action], player)
+    reward = act(C.actions[action], player)
