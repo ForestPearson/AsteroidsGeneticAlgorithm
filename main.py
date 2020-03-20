@@ -70,9 +70,11 @@ def main():
     C.initialize()
 
     #Initialize pygame and window surface.
-    pygame.init()
-    win = pygame.display.set_mode((C.WINDOW_WIDTH, C.WINDOW_HEIGHT))
-    pygame.display.set_caption("Asteroids Genetic Algorithm")
+    if MODE != 2:
+        pygame.init()
+        win = pygame.display.set_mode((C.WINDOW_WIDTH, C.WINDOW_HEIGHT))
+        pygame.display.set_caption("Asteroids Genetic Algorithm")
+        timer =  pygame.time.Clock()
 
     #Initialize Q-Learning.
     if MODE == QLearning:
@@ -92,7 +94,7 @@ def main():
 
     #Initialize scoreboard.
     SCORE = 0
-    if C.DISPLAY_GAME:
+    if C.DISPLAY_GAME and MODE != 2:
         font = pygame.font.Font('Vector_Battle.ttf', 24)
         font.set_bold(True)
         show_score = font.render('SCORE: 0', True, C.WHITE, C.BLACK)
@@ -101,7 +103,7 @@ def main():
 
     #Initialize player sprite.
     player = Player(C.WINDOW_WIDTH/2, C.WINDOW_HEIGHT/2, 0)
-    if C.DISPLAY_GAME:
+    if C.DISPLAY_GAME and MODE != 2:
         ship = pygame.image.load(player.IMAGE)
         ship = pygame.transform.rotate(ship, -90)
         ship = pygame.transform.scale(ship, (C.PLAYERSIZE, C.PLAYERSIZE))
@@ -116,19 +118,29 @@ def main():
 
     #Initialize timers.
     respawntime = 0
-    timer =  pygame.time.Clock()
+
 
     run = True
     if MODE == Genetic:
         run = False
         population = [GA.random_chromosome() for _ in range(GA.PopulationSize)]
-        #i = 0
-        #while i < GA.NumIterations:
-            #population = GA.genetic_algorithm(i, GA.NumIterations, population, 10000000)
-        score = simulate(player, asteroids, projectiles, LEVEL, SCORE, GA.NumIterations, population[0])
-        print(score)
+        fitness_scores = [0 for i in range(GA.PopulationSize)]
+        for each in range(len(population)):
+            fitness_scores[each] = simulate(player, asteroids, projectiles, LEVEL, SCORE, GA.SimulationLength, population[each])
+            print(fitness_scores[each])
+        average = GA.average_fitness(fitness_scores)
+        print("avg fitness: "+str(average))
 
-            #i += 1
+        i = 0
+        while i < GA.NumIterations:
+            i += 1
+            population = GA.breed(population, fitness_scores)
+            for each in range(len(population)):
+                fitness_scores[each] = simulate(player, asteroids, projectiles, LEVEL, SCORE, GA.SimulationLength, population[each])
+                average = GA.average_fitness(fitness_scores)
+                print("avg-fitness: "+str(average))
+
+        #print("Done!")
 
     while run:
         for event in pygame.event.get():
@@ -182,7 +194,7 @@ def main():
 
         timer.tick(C.FPS)
 
-    pygame.quit()
+    if MODE != 2: pygame.quit()
     if C.SAVEQMATRIX: saveQmatrix(Q.Q_Matrix)
 
 def drawGame(player, ship, asteroids, projectiles, scoreboard, SCORE, statedisplay, rays, font, win):
@@ -199,17 +211,18 @@ def simulate(player, asteroids, projectiles, LEVEL, SCORE, steps, CHROMOSOME):
     action = 0
     for step in range(steps):
         sense(player, asteroids)
+        action = GA.updateAction(player, CHROMOSOME)
+        player = executeAction(player, projectiles, action)
         projectiles = detectProjectileColision(asteroids, projectiles)
         SCORE += updateScore(player, asteroids)
+        if SCORE < 0: SCORE = 0
         player.score = SCORE
         updatePlayer(player)
         LEVEL = updateAsteroids(asteroids, LEVEL)
         updateProjectiles(projectiles)
-        action = GA.updateAction(player, CHROMOSOME)
-        player = executeAction(player, action)
     return SCORE
 
-def executeAction(player, action):
+def executeAction(player, projectiles, action):
     if action == 'Left':
         player.rotation += 5
     if action == 'Right':

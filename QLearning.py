@@ -3,7 +3,7 @@ import constant as C
 
 #episodes = 5000
 #lifespan = 200
-#takerisk = 0.1
+takerisk = 0.1
 Q_Matrix = []
 
 def initialize():
