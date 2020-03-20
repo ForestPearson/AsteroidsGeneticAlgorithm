@@ -6,7 +6,7 @@ import GA
 import os.path
 import constant as C
 
-MODE = 1                                                                        #0 = Player control, 1 = Q-Learning, 2 = GA
+MODE = 2                                                                        #0 = Player control, 1 = Q-Learning, 2 = GA
 
 class Player:
     x = 100
@@ -125,7 +125,9 @@ def main():
         #i = 0
         #while i < GA.NumIterations:
             #population = GA.genetic_algorithm(i, GA.NumIterations, population, 10000000)
-        simulate(player, asteroids, projectiles, LEVEL, SCORE, GA.NumIterations, population[0])
+        score = simulate(player, asteroids, projectiles, LEVEL, SCORE, GA.NumIterations, population[0])
+        print(score)
+
             #i += 1
 
     while run:
@@ -204,8 +206,8 @@ def simulate(player, asteroids, projectiles, LEVEL, SCORE, steps, CHROMOSOME):
         LEVEL = updateAsteroids(asteroids, LEVEL)
         updateProjectiles(projectiles)
         action = GA.updateAction(player, CHROMOSOME)
-        executeAction(player, action)
-        print("GA step ",step)
+        player = executeAction(player, action)
+    return SCORE
 
 def executeAction(player, action):
     if action == 'Left':
@@ -220,6 +222,7 @@ def executeAction(player, action):
         if not player.firing: projectiles.append(fireProjectile(player))
         player.firing = True
     if action != 'Shoot': player.firing = False
+    return player
 
 #Generate a projectile in the direction the player is facing.
 def fireProjectile(player):

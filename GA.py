@@ -3,10 +3,11 @@ import math
 import pygame
 import main
 import QLearning as Q
+import constant as C
 
 #Tunable parameters
 PopulationSize = 40								#Number of chromosomes.
-NumIterations = 10  							#Number of generations.
+NumIterations = 10000  							#Number of generations.
 MutationPct = 0.45								#Liklihood of mutation.
 Replacement = False								#Multiple recombination.
 Kickstart = True								#Start with unique rows.
@@ -16,11 +17,11 @@ StaleFactor = 0.05								#Staleness before reset.
 BOARDSIZE = 8									#Boardsize for n-queens.
 
 def random_chromosome():
-    statespace = len(Q.results)**len(Q.sensors)
-    return [random.randint(1,(len(Q.actions)))-1 for i in range(statespace)]
+    statespace = len(C.results)**len(C.sensors)
+    return [random.randint(1,(len(C.actions)))-1 for i in range(statespace)]
 
 def updateAction(player, chromosome):
-    action = Q.actions[chromosome[Q.Q.index(player.state)]]
+    action = C.actions[chromosome[C.state.index(player.state)]]
 
 #calculate the fitness of a chromosome
 def fitness(chromosome):
