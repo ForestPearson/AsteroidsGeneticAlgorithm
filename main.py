@@ -421,7 +421,8 @@ def sense(player, asteroids):
             LL = [asteroid.x, asteroid.y + diameter]
             LR = [asteroid.x + diameter, asteroid.y + diameter]
             if lines_intersect(ray, [UL, UR]) or lines_intersect(ray, [UR, LR]) or lines_intersect(ray, [LL, LR]) or lines_intersect(ray, [UL, LL]):
-                result[sensor] = (C.results[asteroid.scale])
+                #result[sensor] = (C.results[asteroid.scale])
+                result[sensor] = C.results[1]
         angle += 360/C.SENSORCOUNT
     player.state = tuple(result)
     return rays

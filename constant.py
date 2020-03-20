@@ -29,11 +29,12 @@ SENSORRANGE = WINDOW_HEIGHT/2                                                  #
 FRAMES_PER_ACTION = 6                                                           #
 QTRAINING = True                                                               #Toggle for Q-Learning.
 SAVEQMATRIX = False                                                              #Toggle for output of Q-Matrix.
-DRAW_SENSORS = False                                                             #
+DRAW_SENSORS = True                                                             #
 DISPLAY_GAME = True
 
 sensors = ['F', 'FR', 'R', 'BR', 'B' , 'BL' , 'L' , 'FL']
-results = ['None', 'Small', 'Medium', 'Large']
+#results = ['None', 'Small', 'Medium', 'Large']
+results = ['None', 'Some']
 actions = ['Left', 'Right', 'Thrust', 'Shoot']
 state = []
 
